@@ -1,0 +1,105 @@
+/** @format */
+
+div {
+	margin: 0;
+	padding: 0;
+}
+.outerContainer {
+	margin: 0;
+	position: fixed;
+	top: 0;
+	bottom: 0;
+	right: 0;
+	left: 0;
+	padding: 0px;
+	background-color: rosybrown;
+	font-family: sans-serif;
+	font-size: 1.3rem;
+}
+.game {
+	display: flex;
+	flex-direction: column;
+	justify-content: center;
+	align-items: center;
+}
+.row {
+	height: 167px;
+	width: 500px;
+	margin: 0;
+	padding: 0;
+	display: flex;
+	flex-direction: row;
+	justify-content: center;
+	align-items: center;
+	background-color: rosybrown;
+}
+.col {
+	cursor: pointer;
+	width: 33%;
+	height: 167px;
+	padding: 0;
+	margin: 0;
+	background-color: rgb(33, 33, 33);
+	border: 2px solid rosybrown;
+	border-radius: 30px;
+	font-size: 4rem;
+	color: #fff;
+}
+.col:hover {
+	background-color: rgba(33, 33, 33, 0.9);
+}
+
+.playerContainer {
+	width: 400px;
+	height: 100px;
+	display: flex;
+	flex-direction: row;
+	padding: 0;
+	margin: 0;
+}
+
+.play1,
+.play2 {
+	display: flex;
+	flex-direction: column;
+	align-items: flex-start;
+}
+.play2 {
+	align-items: flex-end;
+}
+
+h5,
+h6 {
+	margin: 0;
+	padding: 0 10px;
+}
+
+.profile {
+	width: 90px;
+	height: 75px;
+	border-radius: 50%;
+	position: relative;
+	background-color: #212121;
+}
+
+.head {
+	position: fixed;
+	background-color: rosybrown;
+	width: 20px;
+	height: 20px;
+	transform: translateY(-5px);
+	border-radius: 50%;
+}
+.body {
+	position: fixed;
+	background-color: rosybrown;
+	width: 40px;
+	height: 40px;
+	transform: translateY(30px);
+	border-top-right-radius: 60%;
+	border-top-left-radius: 60%;
+}
+
+.green {
+	color: green;
+}
