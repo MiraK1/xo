@@ -36,7 +36,6 @@ class Game extends Component {
 		socket = io(this.state.ENDPOINT);
 		this.preprocessing({ name, game });
 		socket.on("Update", async (Game) => {
-			console.log(Game);
 			// Game = JSON.parse(Game);
 			this.update(Game);
 			// this.checkIfWin(this.state.played, this.state.turn);
@@ -53,7 +52,6 @@ class Game extends Component {
 			name: name.toUpperCase(),
 			game: game.toLowerCase(),
 		});
-		console.log(this.state.name, this.state.game);
 		socket.emit(
 			"join",
 			{ name: this.state.name, game: this.state.game },
@@ -82,7 +80,6 @@ class Game extends Component {
 			[3, 5, 7],
 		];
 
-		let win = false;
 		let possibility;
 		const classList = ["", "", "", "", "", "", "", "", ""];
 		for (let i = 0; i < 8; i++) {
@@ -109,16 +106,11 @@ class Game extends Component {
 				return true;
 			}
 		}
-		return win;
+		return false;
 	};
 
 	update = async (Game) => {
-		console.log(Game);
-		console.log(typeof Game);
-
 		if (this.state.game === Game.game.toLowerCase()) {
-			console.log(Game.users);
-
 			let user = "";
 			Game.users.forEach((User) => {
 				if (User.username !== this.state.name) {
@@ -126,6 +118,12 @@ class Game extends Component {
 				}
 			});
 			const played = Game.moves;
+			if (played.length === 0) {
+				await this.setState({
+					turn: true,
+					classList: ["", "", "", "", "", "", "", "", ""],
+				});
+			}
 			const playedIcon = ["", "", "", "", "", "", "", "", ""];
 			this.checkIfWin(played, this.state.turn);
 			if (this.state.whenToPlay === played.length) {
@@ -145,14 +143,6 @@ class Game extends Component {
 	};
 
 	clickOn = (Move) => {
-		console.log(
-			this.state.played.indexOf(Move - 1) === -1,
-			this.state.played.length < 9,
-			this.state.turn === true,
-			this.state.user !== "",
-			!this.checkIfWin(this.state.played, this.state.turn),
-		);
-
 		if (
 			this.state.played.indexOf(Move - 1) === -1 &&
 			this.state.played.length < 9 &&
