@@ -5,7 +5,8 @@ import queryString from "query-string";
 import io from "socket.io-client";
 import { Redirect } from "react-router-dom";
 import "./Game.css";
-
+// "https://mirak-xoapp.herokuapp.com/"
+// "http://192.168.0.102:5000"
 let socket;
 
 class Game extends Component {
@@ -14,7 +15,7 @@ class Game extends Component {
 		this.state = {
 			ENDPOINT: "https://mirak-xoapp.herokuapp.com/",
 			name: "",
-			codeGame: "",
+			game: "",
 			user: "",
 			played: [],
 			playedIcon: ["", "", "", "", "", "", "", "", ""],
@@ -30,86 +31,46 @@ class Game extends Component {
 		};
 	}
 	componentDidMount() {
-		const { name, codeGame } = queryString.parse(this.props.location.search);
+		const { name, game } = queryString.parse(this.props.location.search);
+
 		socket = io(this.state.ENDPOINT);
-		this.preprocessing({ name, codeGame });
-		socket.on("Move", ({ Move }) => {
-			if (!this.checkIfWin(this.state.played)) {
-				this.update(Move);
-			}
-		});
-		socket.on("UserJoined", async (users) => {
-			users = users.filter((user) => {
-				return user.name.toLowerCase() !== this.state.name.toLowerCase();
-			});
-			const op = users[0];
-			if (op) {
-				this.setState({
-					user: op.name.toUpperCase(),
-				});
-			}
-		});
-		socket.on("UserLeft", async (users) => {
-			await this.setState({
-				user: "",
-			});
+		this.preprocessing({ name, game });
+		socket.on("Update", async (Game) => {
+			console.log(Game);
+			// Game = JSON.parse(Game);
+			this.update(Game);
+			// this.checkIfWin(this.state.played, this.state.turn);
 		});
 	}
 
-	preprocessing = async ({ name, codeGame }) => {
+	componentWillUnmount() {
+		socket.emit("disconnect");
+		socket.off();
+	}
+
+	preprocessing = async ({ name, game }) => {
 		await this.setState({
 			name: name.toUpperCase(),
-			codeGame: codeGame.toLowerCase(),
+			game: game.toLowerCase(),
 		});
-
-		socket.emit("join", { name, codeGame }, async (error) => {
-			if (error) {
-				alert(error);
-				await this.setState({
-					error: true,
-				});
-			}
-		});
+		console.log(this.state.name, this.state.game);
+		socket.emit(
+			"join",
+			{ name: this.state.name, game: this.state.game },
+			async (error) => {
+				if (error) {
+					alert(error);
+					await this.setState({
+						error: true,
+					});
+				} else {
+					console.log("success");
+				}
+			},
+		);
 	};
 
-	update = async (Move) => {
-		const played = [...this.state.played, Move];
-		const playedIcon = [...this.state.playedIcon];
-		playedIcon[Move - 1] = this.state.Icon[played.length % 2];
-		let turn;
-		if (this.state.whenToPlay === played.length && this.state.turn === false) {
-			turn = true;
-		} else if (this.state.turn === true) {
-			turn = true;
-		} else {
-			turn = false;
-		}
-		await this.setState({
-			played,
-			playedIcon,
-			count: this.state.count + 1,
-			turn,
-		});
-		this.checkIfWin(this.state.played);
-	};
-
-	clickOn = async (Move) => {
-		if (
-			this.state.played.indexOf(Move) === -1 &&
-			this.state.played.length < 9 &&
-			this.state.turn === true &&
-			this.state.user !== "" &&
-			!this.checkIfWin(this.state.played)
-		) {
-			socket.emit("sendMove", Move, () => {});
-			await this.setState({
-				turn: false,
-				whenToPlay: this.state.played.length + 2,
-			});
-		}
-	};
-
-	checkIfWin = (lst) => {
+	checkIfWin = (lst, turn) => {
 		const possibleWin = [
 			[1, 2, 3],
 			[4, 5, 6],
@@ -123,8 +84,10 @@ class Game extends Component {
 
 		let win = false;
 		let possibility;
+		const classList = ["", "", "", "", "", "", "", "", ""];
 		for (let i = 0; i < 8; i++) {
 			possibility = possibleWin[i];
+			possibility = possibility.map((i) => i - 1);
 			let list = possibility.map((item) =>
 				lst.indexOf(item) === -1 ? -1 : lst.indexOf(item) % 2,
 			);
@@ -133,20 +96,81 @@ class Game extends Component {
 				(list.indexOf(1) === -1 || list.indexOf(0) === -1) &&
 				list.indexOf(-1) === -1
 			) {
-				const classList = [...this.state.classList];
-				possibility.forEach((item) => {
-					classList[item - 1] = "green";
+				possibility.forEach((i) => {
+					if (turn) {
+						classList[i] = "green";
+					} else {
+						classList[i] = "red";
+					}
 				});
 				this.setState({
 					classList,
-					win,
-					ListWin: possibility,
 				});
-
 				return true;
 			}
 		}
 		return win;
+	};
+
+	update = async (Game) => {
+		console.log(Game);
+		console.log(typeof Game);
+
+		if (this.state.game === Game.game.toLowerCase()) {
+			console.log(Game.users);
+
+			let user = "";
+			Game.users.forEach((User) => {
+				if (User.username !== this.state.name) {
+					user = User.username;
+				}
+			});
+			const played = Game.moves;
+			const playedIcon = ["", "", "", "", "", "", "", "", ""];
+			this.checkIfWin(played, this.state.turn);
+			if (this.state.whenToPlay === played.length) {
+				await this.setState({
+					turn: true,
+				});
+			}
+			played.forEach((value, index) => {
+				playedIcon[value] = this.state.Icon[index % 2];
+			});
+			await this.setState({
+				user,
+				played,
+				playedIcon,
+			});
+		}
+	};
+
+	clickOn = (Move) => {
+		console.log(
+			this.state.played.indexOf(Move - 1) === -1,
+			this.state.played.length < 9,
+			this.state.turn === true,
+			this.state.user !== "",
+			!this.checkIfWin(this.state.played, this.state.turn),
+		);
+
+		if (
+			this.state.played.indexOf(Move - 1) === -1 &&
+			this.state.played.length < 9 &&
+			this.state.turn === true &&
+			this.state.user !== "" &&
+			!this.checkIfWin(this.state.played, this.state.turn)
+		) {
+			socket.emit(
+				"sendMove",
+				{ Move: Move - 1, name: this.state.name, game: this.state.game },
+				async () => {
+					await this.setState({
+						turn: false,
+						whenToPlay: this.state.played.length + 1,
+					});
+				},
+			);
+		}
 	};
 
 	render() {
@@ -162,7 +186,7 @@ class Game extends Component {
 					</div>
 					<div className='play1'>
 						<h5>Name : {this.state.name}</h5>
-						<h6>Game Code :{this.state.codeGame}</h6>
+						<h6>Game Code :{this.state.game}</h6>
 					</div>
 				</div>
 				<div className='game'>
@@ -221,7 +245,7 @@ class Game extends Component {
 				<div className='playerContainer'>
 					<div className='play2'>
 						<h5>Name : {this.state.user}</h5>
-						<h6>Game Code :{this.state.codeGame}</h6>
+						<h6>Game Code :{this.state.game}</h6>
 					</div>
 					<div className='profile'>
 						<div className='head'></div>
